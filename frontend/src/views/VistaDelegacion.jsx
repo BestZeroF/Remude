@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, UserPlus, FileText, Edit, ChevronRight, ArrowDownAZ, ArrowUpZA } from 'lucide-react';
 
+const MODO_PRESENTACION = true;
+
+const MOCK_DELEGACION = [
+  { id_atleta: 104, nombre_completo: "Gerardo Amaro Buitrón", curp: "AABG061118HQRMTRA4", disciplina: "Ciclismo", division: "Libre", club: "Pedales de Fuego", estatus: "Validado", progreso_ficha: 100, progreso_docs: 100 },
+  { id_atleta: 105, nombre_completo: "David Jhonson Alvaro", curp: "AABG061118HQRMTRA3", disciplina: "Boxeo", division: "Juvenil", club: "Tigres del Ring", estatus: "Pendiente", progreso_ficha: 45, progreso_docs: 0 },
+  { id_atleta: 106, nombre_completo: "Victoria Isabel Piña Poot", curp: "PIPV991122MQRXTC07", disciplina: "Levantamiento de pesas", division: "Libre", club: "Titanes del Sur Centro Deportivo", estatus: "Validado", progreso_ficha: 100, progreso_docs: 80 },
+  { id_atleta: 107, nombre_completo: "Carlos Manuel Sosa", curp: "SOMA010203HQRTTA01", disciplina: "Natación", division: "Infantil", club: "Delfines Azules", estatus: "En revisión", progreso_ficha: 100, progreso_docs: 100 },
+  { id_atleta: 108, nombre_completo: "Ana María López", curp: "LOPA050505HQRTTA02", disciplina: "Atletismo", division: "Libre", club: "Corredores Mayas", estatus: "Rechazado", progreso_ficha: 100, progreso_docs: 20 },
+];
+
 function DropdownFiltro({ label, opciones, seleccionados, setSeleccionados }) {
   const [abierto, setAbierto] = useState(false);
   const drRef = useRef(null);
@@ -39,25 +49,30 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
   const [atletas, setAtletas] = useState([]);
 
   useEffect(() => {
+    if (MODO_PRESENTACION) {
+      setTimeout(() => {
+        setAtletas(MOCK_DELEGACION);
+        setCargando(false);
+      }, 500);
+      return;
+    }
+
     const fetchDelegacion = async () => {
       setCargando(true);
       try {
         const token = localStorage.getItem('token_remude');
-        const res = await fetch('http://localhost:3000/api/entrenadores/mis-atletas', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
+        const res = await fetch('http://localhost:3000/api/entrenadores/mis-atletas', { headers: { 'Authorization': `Bearer ${token}` } });
         if (res.ok) {
           const data = await res.json();
           setAtletas(Array.isArray(data) ? data : (data.atletas || []));
-        } else {
-          setAtletas([]);
+        } else { 
+          setAtletas([]); 
         }
-      } catch (error) {
-        console.error('Error al obtener la delegación:', error);
-        setAtletas([]);
-      } finally {
-        setCargando(false);
+      } catch (error) { 
+        console.error('Error al obtener la delegación:', error); // Corrección del warning de ESLint
+        setAtletas([]); 
+      } finally { 
+        setCargando(false); 
       }
     };
 
@@ -74,7 +89,8 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
         (a.nombre_completo || a.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) || 
         (a.curp || '').toLowerCase().includes(busqueda.toLowerCase());
       
-      const cumpleEstatus = filtros.estatus.length === 0 || filtros.estatus.includes(a.estatus || a.nombre_estatus);
+      const estatusActual = a.estatus || a.nombre_estatus;
+      const cumpleEstatus = filtros.estatus.length === 0 || filtros.estatus.includes(estatusActual);
       const cumpleDisciplina = filtros.disciplina.length === 0 || filtros.disciplina.includes(a.disciplina);
       const cumpleDivision = filtros.division.length === 0 || filtros.division.includes(a.division);
       const cumpleClub = filtros.club.length === 0 || filtros.club.includes(a.club);
@@ -97,7 +113,7 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
             <input type="text" placeholder="Buscar por nombre o CURP..." className="bg-transparent outline-none text-sm w-full" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
           </div>
           <div className="flex flex-wrap gap-2">
-            <DropdownFiltro label="Estado expediente" opciones={["Pendiente", "En revisión", "Verificado", "Rechazado"]} seleccionados={filtros.estatus} setSeleccionados={v => setFiltros({...filtros, estatus: v})} />
+            <DropdownFiltro label="Estado expediente" opciones={["Pendiente", "En revisión", "Validado", "Rechazado"]} seleccionados={filtros.estatus} setSeleccionados={v => setFiltros({...filtros, estatus: v})} />
             <DropdownFiltro label="Disciplina" opciones={opDis} seleccionados={filtros.disciplina} setSeleccionados={v => setFiltros({...filtros, disciplina: v})} />
             <DropdownFiltro label="División" opciones={opDiv} seleccionados={filtros.division} setSeleccionados={v => setFiltros({...filtros, division: v})} />
             <DropdownFiltro label="Club" opciones={opClu} seleccionados={filtros.club} setSeleccionados={v => setFiltros({...filtros, club: v})} />
@@ -121,7 +137,6 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
           procesados.map(a => {
             const estatusReal = a.estatus || a.nombre_estatus || 'Pendiente';
             const nombreMostrar = a.nombre_completo || a.nombre || 'Sin nombre';
-            // NUEVO: Aseguramos tener el ID correcto
             const idSeguro = a.id_atleta || a.id_usuario || a.id;
             
             return (
@@ -137,7 +152,13 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
                     {a.club && <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded truncate max-w-50" title={a.club}>{a.club}</span>}
                   </div>
                 </div>
-                <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${estatusReal.toLowerCase() === 'verificado' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                {/* Estilo Píldora Consistente en Lista */}
+                <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                  estatusReal.toLowerCase() === 'validado' || estatusReal.toLowerCase() === 'verificado' ? 'bg-[#e5f5e8] text-[#2e7d32]' : 
+                  estatusReal.toLowerCase() === 'rechazado' ? 'bg-red-100 text-red-700' : 
+                  estatusReal.toLowerCase() === 'en revisión' ? 'bg-[#fff4e5] text-[#b26a00]' : 
+                  'bg-gray-100 text-gray-600'
+                }`}>
                   {estatusReal}
                 </div>
                 <div className="flex gap-3">

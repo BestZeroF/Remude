@@ -8,7 +8,6 @@ import {
   XCircle, Upload, Eye, Trash2, Calendar, AlertTriangle
 } from 'lucide-react';
 
-// Subcomponentes declarados FUERA del componente principal
 const SectionTitle = (props) => {
   const IconoComponente = props.icon;
   return (
@@ -105,9 +104,14 @@ export default function VistaPerfilAtleta({ cambiarVistaPanel, atletaId, accionI
       setCargando(true);
       setErrorApi(null);
       try {
-        const token = localStorage.getItem('token_remude');
-        if (!atletaId) throw new Error("ID de atleta no proporcionado");
+        console.log("Montando Perfil del Atleta con ID:", atletaId);
+        
+        // Validación de seguridad para dar feedback si PanelEntrenador falla
+        if (!atletaId) {
+          throw new Error("ID de atleta no proporcionado. Asegúrate de que el componente padre (PanelEntrenador) esté pasando la prop 'atletaId' correctamente al renderizar esta vista.");
+        }
 
+        const token = localStorage.getItem('token_remude');
         const response = await fetch(`http://localhost:3000/api/atletas/${atletaId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -117,10 +121,10 @@ export default function VistaPerfilAtleta({ cambiarVistaPanel, atletaId, accionI
           setAtleta(data);
           setDatosEditados(data);
         } else {
-          throw new Error("No se encontró el atleta en la base de datos o hubo un error en el servidor.");
+          throw new Error("No se encontró el expediente del atleta en la base de datos.");
         }
       } catch (error) {
-        console.error("Error cargando atleta:", error);
+        console.error("Error al cargar perfil de atleta:", error);
         setErrorApi(error.message);
       } finally {
         setCargando(false);
@@ -190,10 +194,10 @@ export default function VistaPerfilAtleta({ cambiarVistaPanel, atletaId, accionI
 
   if (errorApi) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-100 animate-fade-in">
+      <div className="flex-1 flex flex-col items-center justify-center min-h-100 animate-fade-in p-6">
         <AlertTriangle className="w-16 h-16 text-red-400 mb-4" />
         <h3 className="text-xl font-bold text-gray-800 mb-2">Error de conexión</h3>
-        <p className="text-gray-500 mb-6 text-center max-w-md">{errorApi}</p>
+        <p className="text-gray-500 mb-6 text-center max-w-lg">{errorApi}</p>
         <button onClick={() => cambiarVistaPanel('delegacion')} className="px-6 py-2 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-colors">
           Volver a delegación
         </button>
@@ -212,7 +216,6 @@ export default function VistaPerfilAtleta({ cambiarVistaPanel, atletaId, accionI
         {/* Columna lateral FIJA (Sticky) */}
         <div className="lg:col-span-1 flex flex-col gap-4 sticky top-6">
           
-          {/* Tarjeta de Identidad y Estatus */}
           <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center text-center relative mt-1">
             <button
               onClick={() => cambiarVistaPanel('delegacion')}
@@ -251,7 +254,6 @@ export default function VistaPerfilAtleta({ cambiarVistaPanel, atletaId, accionI
             </div>
           </div>
 
-          {/* Panel de Botones */}
           <div className="space-y-3">
             {!modoEdicion ? (
               <>
@@ -296,7 +298,6 @@ export default function VistaPerfilAtleta({ cambiarVistaPanel, atletaId, accionI
         {/* Columna principal: Módulos de datos */}
         <div className="lg:col-span-3 flex flex-col gap-6">
           
-          {/* Módulo 1: Datos personales */}
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
             <SectionTitle icon={User} title="Información personal" />
             <div className="grid grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-4">
@@ -326,7 +327,6 @@ export default function VistaPerfilAtleta({ cambiarVistaPanel, atletaId, accionI
             </div>
           </div>
 
-          {/* Módulo 2: Domicilio y Contacto */}
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
             <SectionTitle icon={MapPin} title="Contacto y domicilio" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-4">
@@ -349,7 +349,6 @@ export default function VistaPerfilAtleta({ cambiarVistaPanel, atletaId, accionI
             </div>
           </div>
 
-          {/* Módulo 3: Perfil Médico */}
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
             <SectionTitle icon={Activity} title="Perfil médico y biométrico" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -369,7 +368,6 @@ export default function VistaPerfilAtleta({ cambiarVistaPanel, atletaId, accionI
             </div>
           </div>
 
-          {/* Módulo 4: Deportivo y Académico */}
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
             <SectionTitle icon={GraduationCap} title="Deportivo y Académico" />
             
@@ -397,7 +395,6 @@ export default function VistaPerfilAtleta({ cambiarVistaPanel, atletaId, accionI
             </div>
           </div>
 
-          {/* Módulo 5: Expediente Digital Completo */}
           <div ref={docsRef} className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-6">
             <div className="flex justify-between items-start md:items-center mb-6 border-b border-gray-100 pb-4">
                <div className="flex items-center space-x-3">
@@ -421,7 +418,6 @@ export default function VistaPerfilAtleta({ cambiarVistaPanel, atletaId, accionI
                </div>
                <div className="flex items-center gap-2">
                  <span className="text-xs text-gray-500 font-medium">Estado actual:</span>
-                 {/* Etiqueta de estado del expediente (Estilo píldora) */}
                  <span className={`flex items-center px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest shadow-sm ${
                    estatusExpediente === 'VERIFICADO' || estatusExpediente === 'VALIDADO' ? 'bg-[#e5f5e8] text-[#2e7d32]' : 
                    estatusExpediente === 'RECHAZADO' ? 'bg-red-100 text-red-800' :
